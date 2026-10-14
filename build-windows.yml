@@ -1,0 +1,47 @@
+name: build-windows
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Carga el entorno de MSVC sin depender de rutas fijas de Visual Studio.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Versiones de herramientas
+        shell: pwsh
+        run: |
+          clang-cl --version
+          cmake --version
+          ninja --version
+
+      - name: Configurar (clang-cl + Ninja)
+        shell: pwsh
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
+
+      - name: Compilar
+        shell: pwsh
+        run: cmake --build build --verbose
+
+      - name: Empaquetar
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item build\orbis_run.exe dist\
+          Copy-Item LICENSE, THIRD_PARTY.md, README.md dist\
+          Compress-Archive -Path dist\* -DestinationPath orbis-run-windows.zip
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: orbis-run-windows
+          path: orbis-run-windows.zip
