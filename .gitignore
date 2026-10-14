@@ -1,0 +1,8 @@
+build/
+dumps/
+extracted/
+*.elf
+*.self
+*.pkg
+*.sprx
+*.eboot
